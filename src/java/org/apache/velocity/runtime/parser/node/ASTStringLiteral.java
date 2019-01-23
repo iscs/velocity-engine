@@ -19,11 +19,8 @@ package org.apache.velocity.runtime.parser.node;
  * under the License.    
  */
 
-import java.io.BufferedReader;
-import java.io.IOException;
-import java.io.StringReader;
-import java.io.StringWriter;
-
+import org.apache.velocity.app.event.EventCartridge;
+import org.apache.velocity.app.event.ReferenceInsertionEventHandler;
 import org.apache.velocity.context.InternalContextAdapter;
 import org.apache.velocity.exception.MethodInvocationException;
 import org.apache.velocity.exception.ParseErrorException;
@@ -33,6 +30,14 @@ import org.apache.velocity.runtime.RuntimeConstants;
 import org.apache.velocity.runtime.parser.ParseException;
 import org.apache.velocity.runtime.parser.Parser;
 import org.apache.velocity.runtime.parser.ParserVisitor;
+
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.StringReader;
+import java.io.StringWriter;
+import java.util.ArrayList;
+import java.util.Iterator;
+import java.util.List;
 
 /**
  * ASTStringLiteral support.  Will interpolate!
@@ -45,6 +50,7 @@ public class ASTStringLiteral extends SimpleNode
 {
     /* cache the value of the interpolation switch */
     private boolean interpolate = true;
+    private boolean ignoreReferenceInsertHandlers;
     private SimpleNode nodeTree = null;
     private String image = "";
     private String interpolateimage = "";
@@ -101,6 +107,8 @@ public class ASTStringLiteral extends SimpleNode
             && getFirstToken().image.startsWith("\"")
             && ((getFirstToken().image.indexOf('$') != -1)
                  || (getFirstToken().image.indexOf('#') != -1));
+
+        ignoreReferenceInsertHandlers = rsvc.getBoolean(RuntimeConstants.STRINGLITERALS_IGNORE_REFERENCE_INSERT_HANDLERS, false);
 
         /*
          *  get the contents of the string, minus the '/" at each end
@@ -205,7 +213,27 @@ public class ASTStringLiteral extends SimpleNode
                  */
 
                 StringWriter writer = new StringWriter();
+
+                // Since constructing a string literal does not imply "output" to the output stream,
+                // it is potentially beneficial to not run the insertion handler. This can help avoid double-escaping
+                // in case like the following, assuming the reference insert handler is performing some escaping:
+                //     #set($var = "...$someUnsafeRef...")      <-- if $someUnsafeRef is escaped when evaluating this literal string
+                //     $var                                     <-- it will be double-escaped here.
+                //     $someClass.someMethod("...$var...")      <-- and potentially triple escaped here.
+                // Remove the handler temporarily as a quick and cheap way to not have it called on string literals
+                List<ReferenceInsertionEventHandler> insertRefHandlers = null;
+                if (ignoreReferenceInsertHandlers) {
+                    insertRefHandlers = removeAllReferenceInsertionEventHandler(context);
+                }
+
                 nodeTree.render(context, writer);
+
+                // if the insertion handler was removed temporarily, put it back
+                if (ignoreReferenceInsertHandlers) {
+                    for (ReferenceInsertionEventHandler rieh : insertRefHandlers) {
+                        context.getEventCartridge().addEventHandler(rieh);
+                    }
+                }
 
                 /*
                  * and return the result as a String
@@ -266,5 +294,21 @@ public class ASTStringLiteral extends SimpleNode
          */
 
         return image;
+    }
+
+    private List<ReferenceInsertionEventHandler> removeAllReferenceInsertionEventHandler(InternalContextAdapter context) {
+        List<ReferenceInsertionEventHandler> insertRefHandlers = new ArrayList<ReferenceInsertionEventHandler>();
+        EventCartridge eventCartridge = context.getEventCartridge();
+        if (eventCartridge != null) {
+            Iterator<ReferenceInsertionEventHandler> refInsertEventHandlerIterator = eventCartridge.getReferenceInsertionEventHandlers();
+            while (refInsertEventHandlerIterator.hasNext()) {
+                ReferenceInsertionEventHandler refInsertEventHandler = refInsertEventHandlerIterator.next();
+                insertRefHandlers.add(refInsertEventHandler);
+            }
+            for (ReferenceInsertionEventHandler rieh : insertRefHandlers) {
+                context.getEventCartridge().removeEventHandler(rieh);
+            }
+        }
+        return insertRefHandlers;
     }
 }

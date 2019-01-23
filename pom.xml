@@ -25,15 +25,16 @@
 
   <modelVersion>4.0.0</modelVersion>
 
-  <groupId>org.apache.velocity</groupId>
+  <!--<groupId>gw.managed</groupId>-->
+  <groupId>com.guidewire.insurancenow</groupId>
   <artifactId>velocity</artifactId>
-  <version>1.5</version>
+  <version>1.5.GWRE-1-SNAPSHOT</version>
 
   <name>Apache Velocity</name>
   <url>http://velocity.apache.org/engine/releases/velocity-1.5/</url>
   <description>Apache Velocity is a general purpose template engine.</description>
   <inceptionYear>2000</inceptionYear>
-  <packaging>pom</packaging>
+  <packaging>jar</packaging>
 
   <organization>
     <name>The Apache Software Foundation</name>
@@ -43,8 +44,25 @@
   <build>
     <defaultGoal>install</defaultGoal>
     <sourceDirectory>src/java</sourceDirectory>
-    <testSourceDirectory>src/test</testSourceDirectory>
+    <resources>
+      <resource>
+        <directory>src/java</directory>
+      </resource>
+    </resources>
     <plugins>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-source-plugin</artifactId>
+        <version>2.4</version>
+        <executions>
+          <execution>
+            <id>attach-sources</id>
+            <goals>
+              <goal>jar</goal>
+            </goals>
+          </execution>
+        </executions>
+      </plugin>
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-site-plugin</artifactId>
@@ -52,6 +70,14 @@
           <inputEncoding>UTF-8</inputEncoding>
           <outputEncoding>UTF-8</outputEncoding>
           <xdocDirectory>${basedir}/xdocs/docs</xdocDirectory>
+        </configuration>
+      </plugin>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-compiler-plugin</artifactId>
+        <configuration>
+          <source>1.6</source>
+          <target>1.6</target>
         </configuration>
       </plugin>
     </plugins>
@@ -199,6 +225,20 @@
       <artifactId>werken-xpath</artifactId>
       <version>0.9.4</version>
       <scope>provided</scope>
+    </dependency>
+
+    <dependency>
+      <groupId>junit</groupId>
+      <artifactId>junit</artifactId>
+      <version>3.8.1</version>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.hsqldb</groupId>
+      <artifactId>hsqldb</artifactId>
+      <!--<version>1.7.1</version>  todo what happened to this version staed in build.properties? -->
+      <version>1.8.0.10</version>
+      <scope>test</scope>
     </dependency>
   </dependencies>
 

@@ -1,0 +1,5 @@
+.idea
+*.iml
+build.test/
+target/
+velocity.log

@@ -258,6 +258,9 @@ public interface RuntimeConstants
     /** Switch for the interpolation facility for string literals. */
     String INTERPOLATE_STRINGLITERALS = "runtime.interpolate.string.literals";
 
+    /** Switch for the interpolation facility for string literals. */
+    String STRINGLITERALS_IGNORE_REFERENCE_INSERT_HANDLERS = "runtime.string.literals.ignore.reference.insert.handlers";
+
     /** The character encoding for the templates. Used by the parser in processing the input streams. */
     String INPUT_ENCODING = "input.encoding";
 
